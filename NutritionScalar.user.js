@@ -2,7 +2,7 @@
 // @name     Nutrition Scalar
 // @version  1
 // @grant    none
-// @include  https://world.openfoodfacts.org/cgi/product.pl?type=edit&code=*
+// @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
 // ==/UserScript==
 
 function addScaleButton(hsel,sel){
