@@ -12,7 +12,8 @@ function addScaleButton(hsel,sel){
   }
   var e=document.createElement("button");
   e.textContent="×";
-  e.onclick=e=>e.preventDefault()+scaleValues();
+  e.type="button";
+  e.onclick=scaleValues;
   e.style.padding="0 10px";
   var he=document.querySelector(hsel);
   he.appendChild(document.createElement("br"));
