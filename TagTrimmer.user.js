@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Tag Trimmer
-// @version  2024-09-29
+// @version  2024-09-29_1
 // @grant    none
 // @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
 // @include  http://*.openfoodfacts.localhost/cgi/product.pl?type=edit&code=*
@@ -253,10 +253,12 @@ void (function(){
       text-shadow:blue 0 0 2px;\
     }\
     .tagtrimmer_table td.parentsview_parent {\
-      text-decoration:solid overline 2px;\
+      text-decoration-line:overline;\
+      text-decoration-thickness:2px;\
     }\
     .tagtrimmer_table td.parentsview_child {\
-      text-decoration:solid underline 2px;\
+      text-decoration-line:underline;\
+      text-decoration-thickness:2px;\
     }\
     .tagtrimmer_table input[type="radio"].no_effect {\
       opacity:0.5;\
