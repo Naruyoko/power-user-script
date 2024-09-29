@@ -1,11 +1,13 @@
 // ==UserScript==
-// @name     EasyView Logos
-// @version  1
-// @grant    none
-// @include  https://hunger.openfoodfacts.org/logos
-// @include  https://hunger.openfoodfacts.org/logos?*
-// @include  https://hunger.openfoodfacts.org/logos/deep-search*
-// @include  https://hunger.openfoodfacts.org/logos/deep-search?*
+// @name      EasyView Logos
+// @version   1
+// @grant     none
+// @include   https://hunger.openfoodfacts.org/logos
+// @include   https://hunger.openfoodfacts.org/logos?*
+// @include   https://hunger.openfoodfacts.org/logos/deep-search*
+// @include   https://hunger.openfoodfacts.org/logos/deep-search?*
+//
+// @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/EasyViewLogos.user.js
 // ==/UserScript==
 
 var css =

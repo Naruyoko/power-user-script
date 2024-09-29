@@ -1,8 +1,10 @@
 // ==UserScript==
-// @name     Nutrition Scalar
-// @version  1
-// @grant    none
-// @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
+// @name      Nutrition Scalar
+// @version   1
+// @grant     none
+// @include   https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
+//
+// @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/NutritionScalar.user.js
 // ==/UserScript==
 
 function addScaleButton(hsel,sel){

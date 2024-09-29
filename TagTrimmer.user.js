@@ -1,9 +1,11 @@
 // ==UserScript==
-// @name     Tag Trimmer
-// @version  2024-09-29_2
-// @grant    none
-// @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
-// @include  http://*.openfoodfacts.localhost/cgi/product.pl?type=edit&code=*
+// @name      Tag Trimmer
+// @version   2024-09-29_2
+// @grant     none
+// @include   https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
+// @include   http://*.openfoodfacts.localhost/cgi/product.pl?type=edit&code=*
+//
+// @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/TagTrimmer.user.js
 // ==/UserScript==
 
 function TrimmerContext(tagType){

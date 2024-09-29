@@ -1,9 +1,11 @@
 // ==UserScript==
-// @name     Broken Logo Remover
-// @version  1
-// @grant    none
-// @include  https://hunger.openfoodfacts.org/logos/deep-search*
-// @include  https://hunger.openfoodfacts.org/logos/deep-search?*
+// @name      Broken Logo Remover
+// @version   1
+// @grant     none
+// @include   https://hunger.openfoodfacts.org/logos/deep-search*
+// @include   https://hunger.openfoodfacts.org/logos/deep-search?*
+//
+// @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/BrokenLogoRemover.user.js
 // ==/UserScript==
 
 //Note: Only use this button if you don't have any images selected
