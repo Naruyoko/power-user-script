@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Tag Trimmer
-// @version  2024-09-29_1
+// @version  2024-09-29_2
 // @grant    none
 // @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
 // @include  http://*.openfoodfacts.localhost/cgi/product.pl?type=edit&code=*
@@ -249,6 +249,9 @@ void (function(){
       outline:solid 5px #a0a0a0;\
       outline-offset:-5px;\
     }\
+    .tagtrimmer_table td:nth-child(n+2) {\
+      text-align:center;\
+    }\
     .tagtrimmer_table td.parentsview_target {\
       text-shadow:blue 0 0 2px;\
     }\
@@ -349,12 +352,12 @@ TrimmerWindow.prototype.grabValues=function (){
           rowElem.appendChild(cellElem);
           var buttonElem=document.createElement("input");
           cellElem.appendChild(buttonElem);
+          cellElem.onmouseover=function(){trimmer.setWhatIf(tag,value);};
+          cellElem.onmouseout=function(){trimmer.clearWhatIf();};
           buttonElem.type="radio";
           buttonElem.name=tag;
           buttonElem.value=value;
           buttonElem.onchange=function(){trimmer.update();};
-          buttonElem.onmouseover=function(){trimmer.setWhatIf(tag,value);};
-          buttonElem.onmouseout=function(){trimmer.clearWhatIf();};
           if (value=="auto") buttonElem.checked=true;
         });
       });
