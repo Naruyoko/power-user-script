@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Tag Trimmer
-// @version  1
+// @version  2024-09-29
 // @grant    none
 // @include  https://*.openfoodfacts.org/cgi/product.pl?type=edit&code=*
 // @include  http://*.openfoodfacts.localhost/cgi/product.pl?type=edit&code=*
@@ -9,6 +9,7 @@
 function TrimmerContext(tagType){
   this.tagType=tagType;
   this.resetStorage();
+  this.initializeDatabase();
 }
 TrimmerContext.prototype.taxonomyURL=function (){
   return window.location.origin+"/data/taxonomies/"+this.tagType+".json";
@@ -21,67 +22,79 @@ TrimmerContext.prototype.tagCanonizerURL=function (tag){
 };*/
 
 var apiDelay=100;
-TrimmerContext.prototype.fetchMissingCanoninzation=function (tag){
+var cacheLifespan=86400000;
+TrimmerContext.prototype.loadCanonization=function (tag){
   var context=this;
   return new Promise(function(resolve,reject){
     if (context.canonizationMap.hasOwnProperty(tag)) resolve();
-    else setTimeout(function(){
-      fetch(context.tagCanonizerURL(tag))
-        .then(function(response){
-          if (response.status!=200) throw new Error("HTTP error: "+response.status);
-          return response.json();
-        }).then(function(data){
-          context.canonizationMap[tag]={
-            tagid:data["tag"]["tagid"],
-            timestamp:Date.now()
-          };
-          context.saveCache();
-        }).then(resolve,reject);
-    },apiDelay);
+    else{
+      var os=context.db.transaction("canonizationMap","readonly").objectStore("canonizationMap");
+      var getRequest=os.get(tag);
+      getRequest.onerror=reject;
+      getRequest.onsuccess=function (){
+        var record=getRequest.result;
+        if (record&&record.timestamp+cacheLifespan>=Date.now()){
+          context.canonizationMap[tag]=record;
+          resolve();
+        }else{
+          setTimeout(function(){
+            fetch(context.tagCanonizerURL(tag))
+              .then(function(response){
+                if (response.status!=200) throw new Error("HTTP error: "+response.status);
+                return response.json();
+              }).then(function(data){
+                var record={
+                  tagid:data["tag"]["tagid"],
+                  timestamp:Date.now()
+                };
+                context.canonizationMap[tag]=record;
+                var os=context.db.transaction("canonizationMap","readwrite").objectStore("canonizationMap");
+                var putRequest=os.put(record,tag);
+                putRequest.onerror=reject;
+                putRequest.onsuccess=resolve;
+              });
+          },apiDelay);
+        }
+      };
+    }
   });
 };
-//Insufficient for recursive parents
-/*TrimmerContext.prototype.fetchMissingParents=function (tagids){
+TrimmerContext.prototype.loadTaxonomy=function (){
   var context=this;
   return new Promise(function(resolve,reject){
-    var missing=tagids.filter(function(tag){return !context.parentsMap.hasOwnProperty(tag);});
-    if (!missing.length) resolve();
-    else setTimeout(function(){
-      fetch(context.tagInfoURL(tagids))
-        .then(function(response){
-          if (response.status!=200) throw new Error("HTTP error: "+response.status);
-          return response.json();
-        }).then(function(data){
-          missing.forEach(function(tag){
-            context.parentsMap[tag]={
-              parents:data[tag]["parents"],
-              timestamp:Date.now()
-            };
-          });
-          context.saveCache();
-          resolve(missing);
-        }).then(resolve,reject);
-    },apiDelay);
-  });
-};*/
-TrimmerContext.prototype.fetchMissingTaxonomy=function (){
-  var context=this;
-  return new Promise(function(resolve,reject){
-    if (this.taxonomy) resolve();
-    else setTimeout(function(){
-      fetch(context.taxonomyURL())
-        .then(function(response){
-          if (response.status!=200) throw new Error("HTTP error: "+response.status);
-          return response.json();
-        }).then(function(data){
-          context.taxonomy={
-            data:data,
-            timestamp:Date.now()
-          };
-          context.parentsMap={};
-          context.saveCache();
-        }).then(resolve,reject);
-    },apiDelay);
+    if (context.taxonomy) resolve();
+    else{
+      var os=context.db.transaction("taxonomy","readonly").objectStore("taxonomy");
+      var getRequest=os.get(1);
+      getRequest.onerror=reject;
+      getRequest.onsuccess=function (){
+        var record=getRequest.result;
+        if (record&&record.timestamp+cacheLifespan>=Date.now()){
+          context.taxonomy=record;
+          context.deepParentsMap={};
+          resolve();
+        }else{
+          setTimeout(function(){
+            fetch(context.taxonomyURL())
+              .then(function(response){
+                if (response.status!=200) throw new Error("HTTP error: "+response.status);
+                return response.json();
+              }).then(function(data){
+                var record={
+                  data:data,
+                  timestamp:Date.now()
+                };
+                context.taxonomy=record;
+                context.deepParentsMap={};
+                var os=context.db.transaction("taxonomy","readwrite").objectStore("taxonomy");
+                var putRequest=os.put(record,1);
+                putRequest.onerror=reject;
+                putRequest.onsuccess=resolve;
+              });
+          },apiDelay);
+        }
+      };
+    }
   });
 };
 TrimmerContext.prototype.getCanonization=function (tag){
@@ -115,37 +128,56 @@ TrimmerContext.prototype.getDeepParentsEach=function (tagids){
   var context=this;
   return tagids.map(function(tagid){return context.getDeepParents(tagid);});
 };
-TrimmerContext.prototype.localStorageKey=function (){
+TrimmerContext.prototype.databaseName=function (){
   return "TagTrimmer:"+this.tagType;
 };
 TrimmerContext.prototype.resetStorage=function (){
+  this.log("resetStorage");
   this.canonizationMap={};
   this.taxonomy=null;
   this.deepParentsMap={};
 };
-TrimmerContext.prototype.clearCache=function (){
-  this.resetStorage();
-  this.saveCache();
+TrimmerContext.prototype.clearDatabase=function (){
+  var context=this;
+  context.resetStorage();
+  return new Promise(function (resolve,reject){
+    context.db.close();
+    var deleteRequest=indexedDB.deleteDatabase(context.databaseName());
+    deleteRequest.onerror=reject;
+    deleteRequest.onsuccess=function (){
+      context.log("clearDatabase: success");
+      context.db=null;
+      resolve();
+    };
+  });
 };
-TrimmerContext.prototype.saveCache=function (){
-  localStorage.setItem(this.localStorageKey(),JSON.stringify({
-    canonizationMap:this.canonizationMap,
-    taxonomy:this.taxonomy
-  }));
-};
-var cacheLifespan=86400000;
-TrimmerContext.prototype.loadCache=function (){
-  this.resetStorage();
-  var saved=localStorage.getItem(this.localStorageKey());
-  if (saved===null) return;
-  var parsed=JSON.parse(saved);
-  var time=Date.now();
-  this.canonizationMap=parsed.canonizationMap;
-  for (var a=Object.entries(this.canonizationMap),i=0;i<a.length;i++){
-    if (a[i][1].timestamp+cacheLifespan<time) delete this.canonizationMap[a[i][0]];
-  }
-  this.taxonomy=parsed.taxonomy;
-  if (this.taxonomy&&this.taxonomy.timestamp+cacheLifespan<time) this.taxonomy=null;
+TrimmerContext.prototype.initializeDatabase=function (){
+  var context=this;
+  context.db=context.db||null;
+  return new Promise(function (resolve,reject){
+    if (context.db) context.db.close();
+    var dbRequest=indexedDB.open(context.databaseName());
+    dbRequest.onerror=reject;
+    dbRequest.onupgradeneeded=function (){
+      context.log("initializeDatabase: upgradeneeded");
+      context.db=dbRequest.result;
+      var os;
+      os=context.db.createObjectStore("canonizationMap");
+      os.createIndex("tagid","tagid",{unique:false});
+      os.createIndex("timestamp","timestamp",{unique:false});
+      os=context.db.createObjectStore("taxonomy");
+      os.createIndex("data","data",{unique:false});
+      os.createIndex("timestamp","timestamp",{unique:false});
+    };
+    dbRequest.onsuccess=function (){
+      context.log("initializeDatabase: success");
+      context.db=dbRequest.result;
+      context.db.onclose=function (){
+        context.log("onclose");
+      };
+      resolve();
+    };
+  });
 };
 TrimmerContext.prototype.compute=function (tags,values){
   var context=this;
@@ -184,6 +216,10 @@ TrimmerContext.prototype.compute=function (tags,values){
     states:states
   };
 };
+TrimmerContext.prototype.log=function (){
+  arguments[0]="[Tagtrimmer:"+this.tagType+"]: "+arguments[0];
+  console.log.apply(this,arguments);
+}
 
 void (function(){
   var s=document.createElement("style");
@@ -229,7 +265,7 @@ void (function(){
 
 function TrimmerWindow(tagType){
   this.context=new TrimmerContext(tagType);
-  this.createUI(tagType);
+  this.createUI();
 };
 TrimmerWindow.prototype.createUI=function (){
   var trimmer=this;
@@ -275,7 +311,11 @@ TrimmerWindow.prototype.createUI=function (){
   clearCacheButton.textContent="Clear cache";
   clearCacheButton.className="small button tagtrimmer_button";
   clearCacheButton.type="button";
-  clearCacheButton.onclick=function(){trimmer.context.clearCache();trimmer.grabValues();};
+  clearCacheButton.onclick=function(){
+    trimmer.context.clearDatabase()
+      .then(function (){return trimmer.context.initializeDatabase();})
+      .then(function (){return trimmer.grabValues();});
+  };
 };
 TrimmerWindow.prototype.open=function (){
   this.formElem.style.display="block";
@@ -284,16 +324,15 @@ TrimmerWindow.prototype.open=function (){
 TrimmerWindow.prototype.grabValues=function (){
   var trimmer=this;
   trimmer.tableBodyElem.innerHTML="";
-  trimmer.context.loadCache();
   trimmer.tags=JSON.parse(trimmer.targetElem.value).map(function(e){return e.value;});
   trimmer.tags.reduce(function(promise,value,i){
     return promise.then(function(){
       trimmer.messageElem.textContent="Loading canonization "+(i+1)+"/"+trimmer.tags.length+" : "+value;
-      return trimmer.context.fetchMissingCanoninzation(value);
+      return trimmer.context.loadCanonization(value);
     });},Promise.resolve())
     .then(function(){
       trimmer.messageElem.textContent="Loading taxonomy";
-      return trimmer.context.fetchMissingTaxonomy();
+      return trimmer.context.loadTaxonomy();
     }).then(function(){
       trimmer.tags.forEach(function(tag){
         var rowElem=document.createElement("tr");
