@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name      Open Food Facts Nutrition Form Injector
-// @version   2026-08-15
+// @version   2026-08-26
 // @author    Naruyoko
 // @include   https://*.openfoodfacts.org/cgi/product.pl*
 // @icon      data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant     none
+// @require   http://code.jquery.com/jquery-2.1.4.min.js
 // @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/NutritionFormInjector.user.js
 // ==/UserScript==
 
@@ -31,7 +32,7 @@ window.addEventListener("load",function (){
         t.val(v2),$("#nutrient_"+r[3]+"_tr").css("display",""),c=true;
       if (r=/^global_nutrient_[- 0-9A-Za-z]+_unit$/.exec(k))
         t.val(v2),c=true;
-      if (c) t.trigger("change");
+      if (c) t[0].dispatchEvent(new Event("change"));
       else console.warn(l);
     }
   }
