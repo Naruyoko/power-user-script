@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name      Open Food Facts Nutrition Form Injector
-// @version   2026-08-26
+// @version   2026-08-28
 // @author    Naruyoko
 // @include   https://*.openfoodfacts.org/cgi/product.pl*
 // @icon      data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
-// @grant     none
-// @require   http://code.jquery.com/jquery-2.1.4.min.js
+// @grant     GM_getResourceText
+// @require   http://code.jquery.com/jquery-latest.min.js
 // @updateURL https://github.com/Naruyoko/power-user-script/raw/refs/heads/Naruyoko-custom/NutritionFormInjector.user.js
 // ==/UserScript==
 
